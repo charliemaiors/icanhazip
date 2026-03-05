@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-const version = "1.2.0"
+const version = "1.0.0"
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")
@@ -61,8 +61,8 @@ var privateRanges = []ipRange{
 		end:   net.ParseIP("172.31.255.255"),
 	},
 	{
-		start: net.ParseIP("192.0.0.0"),
-		end:   net.ParseIP("192.0.0.255"),
+		start: net.ParseIP("192.0.2.0"),
+		end:   net.ParseIP("192.0.2.255"),
 	},
 	{
 		start: net.ParseIP("192.168.0.0"),

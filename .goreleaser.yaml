@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+builds:
+- id: exporter
+  main: main.go
+  binary: redfish-exporter
+  env:
+    - CGO_ENABLED=0
+  ldflags:
+    - -s -w -extldflags "-static" -X "main.version=$(VERSION)"
+  goos:
+    - linux
+    - windows
+    - darwin
+  goarch:
+    - amd64
+    - "386"
+    - arm64
+    - arm
+  ignore:
+    - goos: darwin
+      goarch: "386"
+  
+nfpms:
+- id: packages
+  ids:
+    - exporter
+  package_name: icanhazip
+  file_name_template: "icanhazip-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}"
+  vendor: Sysadmins-Unix
+  homepage: https://github.com/charliemaiors/icanhazip
+  maintainer: Sysadmins Unix
+  bindir: /usr/local/bin
+  description: |-
+    Exporter for Supermicro servers using redfish protocol
+  license: Apache 2.0
+  formats:
+    - deb
+    - rpm
+    - archlinux
+    - apk
+  contents:
+    - src: packaging/systemd/redfish-exporter.service
+      dst: /usr/lib/systemd/system/redfish-exporter.service
+    - src: packaging/config/config.yaml
+      dst: /etc/redfish-exporter/config.yaml
+      type: config|noreplace
+  scripts:
+    preinstall: packaging/scripts/preinstall.sh
+    preremove: packaging/scripts/preremove.sh
+release:
+  mode: keep-existing
+  footer: "Released with GoReleaser"
