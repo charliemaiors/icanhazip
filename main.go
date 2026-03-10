@@ -10,13 +10,25 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const version = "1.0.0"
 
+var config Config
+var err error
+
 func main() {
 	ver := flag.Bool("version", false, "Prints version")
 	flag.Parse()
+
+	config, err = loadConfig()
+
+	if err != nil {
+		log.Errorf("Error loading config: %v\n", err)
+		return
+	}
 
 	if *ver {
 		fmt.Println(version)
@@ -27,7 +39,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", getIPAddress)
-	http.ListenAndServe(":8091", nil)
+	http.ListenAndServe(config.Server.Host+":"+fmt.Sprintf("%d", config.Server.Port), nil)
 }
 
 // https://husobee.github.io/golang/ip-address/2015/12/17/remote-ip-go.html
@@ -105,7 +117,7 @@ func getIPAddress(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			if ipv4Address := realIP.To4(); ipv4Address != nil {
-				if !realIP.IsGlobalUnicast() || isPrivateSubnet(realIP) {
+				if !realIP.IsGlobalUnicast() || !config.Results.IncludePrivate && isPrivateSubnet(realIP) {
 					continue
 				}
 				ipv4 = ip
