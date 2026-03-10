@@ -2,9 +2,9 @@
 version: 2
 
 builds:
-- id: exporter
+- id: icahanzip
   main: main.go
-  binary: redfish-exporter
+  binary: golang-icahanzip
   env:
     - CGO_ENABLED=0
   ldflags:
@@ -25,15 +25,15 @@ builds:
 nfpms:
 - id: packages
   ids:
-    - exporter
+    - icahanzip
   package_name: icanhazip
   file_name_template: "icanhazip-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}"
-  vendor: Sysadmins-Unix
+  vendor: charliemaiors
   homepage: https://github.com/charliemaiors/icanhazip
   maintainer: Sysadmins Unix
   bindir: /usr/local/bin
   description: |-
-    Exporter for Supermicro servers using redfish protocol
+    Icahanzip implementation in Golang
   license: Apache 2.0
   formats:
     - deb
@@ -51,4 +51,4 @@ nfpms:
     preremove: packaging/scripts/preremove.sh
 release:
   mode: keep-existing
-  footer: "Released with GoReleaser"
+  footer: "Released with passion and GoReleaser"

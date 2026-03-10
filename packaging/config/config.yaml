@@ -1,0 +1,6 @@
+server:
+  port: 8091
+  host: 0.0.0.0
+results:
+  include_private: true
+  
