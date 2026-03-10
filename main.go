@@ -122,13 +122,23 @@ func getIPAddress(w http.ResponseWriter, r *http.Request) {
 				}
 				ipv4 = ip
 				break // Found a valid IPv4 address
-			} else if ipv6 == "" && realIP.IsGlobalUnicast() && !isPrivateSubnet(realIP) {
-				ipv6 = ip // Store first valid IPv6 address
 			}
 		}
 		if ipv4 != "" {
 			fmt.Fprintf(w, ipv4+"\n")
 			return
+		}
+	}
+
+	if ipv4 == "" { // If no valid IPv4 was found, check RemoteAddr
+		ret := r.RemoteAddr
+		ip, _, _ := net.SplitHostPort(ret)
+		realIP := net.ParseIP(ip)
+		if realIP != nil && realIP.To4() != nil {
+			if realIP.IsGlobalUnicast() && (config.Results.IncludePrivate || !isPrivateSubnet(realIP)) {
+				fmt.Fprintf(w, ip+"\n")
+				return
+			}
 		}
 	}
 
