@@ -52,3 +52,14 @@ nfpms:
 release:
   mode: keep-existing
   footer: "Released with passion and GoReleaser"
+
+kos:
+  - repositories: [ghcr.io/charliemaiors/icanhazip]
+    tags:
+      - "{{.Version}}"
+      - latest
+    bare: true
+    preserve_import_paths: false
+    platforms:
+      - linux/amd64
+      - linux/arm64
