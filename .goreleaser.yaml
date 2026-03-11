@@ -1,10 +1,12 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 version: 2
 
+project_name: icanhazip
+
 builds:
-- id: icahanzip
+- id: binaries
   main: main.go
-  binary: golang-icahanzip
+  binary: golang-icahazip
   env:
     - CGO_ENABLED=0
   ldflags:
@@ -21,11 +23,13 @@ builds:
   ignore:
     - goos: darwin
       goarch: "386"
+    - goos: windows
+      goarch: arm
   
 nfpms:
 - id: packages
   ids:
-    - icahanzip
+    - binaries
   package_name: icanhazip
   file_name_template: "icanhazip-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}"
   vendor: charliemaiors
