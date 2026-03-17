@@ -10,7 +10,7 @@ builds:
   env:
     - CGO_ENABLED=0
   ldflags:
-    - -s -w -extldflags "-static" -X "main.version={{.Version}}"
+    - -s -w -extldflags "-static" -X "main.version={{ .Version }}"
   goos:
     - linux
     - windows
@@ -62,8 +62,9 @@ kos:
     build: icanhazip
     repositories: 
     - ghcr.io/charliemaiors/icanhazip
-    local_domain: ghcr.io
+    - charliemaiors/icahazip
     disable: "{{ .IsSnapshot }}"
+    local_domain: "charliemaiors.github.io"
     main: .
     tags:
       - "{{.Version}}"
