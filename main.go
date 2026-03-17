@@ -23,7 +23,7 @@ func main() {
 	ver := flag.Bool("version", false, "Prints version")
 	flag.Parse()
 
-	config, err = loadConfig()
+	config, err = LoadConfig()
 
 	if err != nil {
 		log.Errorf("Error loading config: %v\n", err)

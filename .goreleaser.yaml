@@ -4,8 +4,8 @@ version: 2
 project_name: icanhazip
 
 builds:
-- id: binaries
-  main: main.go
+- id: icanhazip
+  main: .
   binary: golang-icahazip
   env:
     - CGO_ENABLED=0
@@ -29,12 +29,12 @@ builds:
 nfpms:
 - id: packages
   ids:
-    - binaries
+    - icanhazip
   package_name: icanhazip
   file_name_template: "icanhazip-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}"
   vendor: charliemaiors
   homepage: https://github.com/charliemaiors/icanhazip
-  maintainer: Sysadmins Unix
+  maintainer: charliemaiors
   bindir: /usr/local/bin
   description: |-
     Icahanzip implementation in Golang
@@ -45,10 +45,10 @@ nfpms:
     - archlinux
     - apk
   contents:
-    - src: packaging/systemd/redfish-exporter.service
-      dst: /usr/lib/systemd/system/redfish-exporter.service
+    - src: packaging/systemd/icahazip.service
+      dst: /usr/lib/systemd/system/icahazip.service
     - src: packaging/config/config.yaml
-      dst: /etc/redfish-exporter/config.yaml
+      dst: /etc/icanhazip/config.yaml
       type: config|noreplace
   scripts:
     preinstall: packaging/scripts/preinstall.sh
@@ -58,7 +58,9 @@ release:
   footer: "Released with passion and GoReleaser"
 
 kos:
-  - repositories: [ghcr.io/charliemaiors/icanhazip]
+  - repositories: 
+    - ghcr.io/charliemaiors/icanhazip
+    main: .
     tags:
       - "{{.Version}}"
       - latest
