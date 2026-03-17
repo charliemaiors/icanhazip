@@ -10,7 +10,7 @@ builds:
   env:
     - CGO_ENABLED=0
   ldflags:
-    - -s -w -extldflags "-static" -X "main.version=$(VERSION)"
+    - -s -w -extldflags "-static" -X "main.version={{.Version}}"
   goos:
     - linux
     - windows
@@ -58,8 +58,12 @@ release:
   footer: "Released with passion and GoReleaser"
 
 kos:
-  - repositories: 
+  - id: docker
+    build: icanhazip
+    repositories: 
     - ghcr.io/charliemaiors/icanhazip
+    local_domain: ghcr.io
+    disable: "{{ .IsSnapshot }}"
     main: .
     tags:
       - "{{.Version}}"
