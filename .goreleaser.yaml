@@ -65,6 +65,7 @@ kos:
     - charliemaiors/icahazip
     disable: "{{ .IsSnapshot }}"
     local_domain: "charliemaiors.github.io"
+    sbom: none
     main: .
     tags:
       - "{{.Version}}"
