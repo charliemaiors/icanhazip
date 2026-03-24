@@ -62,7 +62,6 @@ kos:
     build: icanhazip
     repositories: 
     - ghcr.io/charliemaiors/icanhazip
-    - charliemaiors/icahazip
     disable: "{{ .IsSnapshot }}"
     local_domain: "charliemaiors.github.io"
     sbom: none
