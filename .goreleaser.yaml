@@ -6,7 +6,7 @@ project_name: icanhazip
 builds:
 - id: icanhazip
   main: .
-  binary: golang-icahazip
+  binary: icanhazip
   env:
     - CGO_ENABLED=0 
   ldflags:

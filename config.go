@@ -26,7 +26,12 @@ func init() {
 	viper.AddConfigPath("/etc/icanhazip/")
 }
 
-func LoadConfig() (Config, error) {
+func LoadConfig(flagConfig string) (Config, error) {
+
+	if flagConfig != "" {
+		viper.SetConfigFile(flagConfig)
+	}
+
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatalf("Error reading config file: %s", err)

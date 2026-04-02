@@ -21,9 +21,10 @@ var err error
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")
+	configPath := flag.String("config", "", "Path to config file")
 	flag.Parse()
 
-	config, err = LoadConfig()
+	config, err = LoadConfig(*configPath)
 
 	if err != nil {
 		log.Errorf("Error loading config: %v\n", err)
