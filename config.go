@@ -13,6 +13,19 @@ type Config struct {
 type Server struct {
 	Port int    `mapstructure:"port",omitempty`
 	Host string `mapstructure:"host",omitempty`
+	TLS  *TLS   `mapstructure:"tls",omitempty`
+}
+
+type TLS struct {
+	CertFile string `mapstructure:"cert_file",omitempty`
+	KeyFile  string `mapstructure:"key_file",omitempty`
+	Acme     *Acme  `mapstructure:"acme",omitempty`
+}
+
+type Acme struct {
+	Email            string   `mapstructure:"email",omitempty`
+	Domains          []string `mapstructure:"domains",omitempty`
+	AcmeDirectoryURL string   `mapstructure:"acme_directory_url",omitempty`
 }
 
 type Result struct {

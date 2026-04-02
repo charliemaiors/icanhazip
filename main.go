@@ -4,12 +4,22 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"flag"
 	"fmt"
 	"net"
 	"net/http"
 	"runtime/debug"
 	"strings"
+
+	"github.com/go-acme/lego/v4/certcrypto"
+	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v4/challenge/http01"
+	"github.com/go-acme/lego/v4/challenge/tlsalpn01"
+	"github.com/go-acme/lego/v4/lego"
+	"github.com/go-acme/lego/v4/registration"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -39,8 +49,77 @@ func main() {
 		}
 	}
 
-	http.HandleFunc("/", getIPAddress)
-	http.ListenAndServe(config.Server.Host+":"+fmt.Sprintf("%d", config.Server.Port), nil)
+	if config.Server.TLS != nil {
+		if config.Server.TLS.CertFile != "" && config.Server.TLS.KeyFile != "" {
+			log.Infof("Starting server with TLS on %s:%d\n", config.Server.Host, config.Server.Port)
+			http.HandleFunc("/", getIPAddress)
+			err := http.ListenAndServeTLS(config.Server.Host+":"+fmt.Sprintf("%d", config.Server.Port), config.Server.TLS.CertFile, config.Server.TLS.KeyFile, nil)
+			if err != nil {
+				panic("Error starting server with TLS: " + err.Error())
+			}
+		} else if config.Server.TLS.Acme != nil {
+			log.Infof("Starting server with ACME TLS on %s:%d\n", config.Server.Host, config.Server.Port)
+			privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			if err != nil {
+				panic("Error generating private key: " + err.Error())
+			}
+
+			user := registration.RegisterOptions{
+				Email: config.Server.TLS.Acme.Email,
+				Key:   certcrypto.PEMEncode(privateKey),
+			}
+
+			config := lego.NewConfig(&user)
+			config.CADirURL = config.Server.TLS.Acme.AcmeDirectoryURL
+
+			client, err := lego.NewClient(config)
+			if err != nil {
+				panic("Error creating ACME client: " + err.Error())
+			}
+
+			err = client.Challenge.SetHTTP01Provider(http01.NewProviderServer("", "80"))
+			if err != nil {
+				panic("Error setting HTTP-01 provider: " + err.Error())
+			}
+
+			err = client.Challenge.SetTLSALPN01Provider(tlsalpn01.NewProviderServer("", "443"))
+			if err != nil {
+				panic("Error setting TLS-ALPN-01 provider: " + err.Error())
+			}
+
+			reg, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
+			if err != nil {
+				panic("Error registering ACME account: " + err.Error())
+			}
+			log.Infof("Registered ACME account: %s\n", reg.URI)
+
+			request := certificate.ObtainRequest{
+				Domains: config.Server.TLS.Acme.Domains,
+				Bundle:  true,
+			}
+			certificates, err := client.Certificate.Obtain(request)
+			if err != nil {
+				panic("Error obtaining certificate: " + err.Error())
+			}
+
+			certManager := &tlsalpn01.CertManager{
+				Certificates: map[string]*tlsalpn01.Certificate{
+					config.Server.TLS.Acme.Domains[0]: {
+						Certificate: certificates.Certificate,
+						Key:         certificates.PrivateKey,
+					},
+				},
+			}
+			http.HandleFunc("/", getIPAddress)
+			err := http.ListenAndServeTLS(config.Server.Host+":"+fmt.Sprintf("%d", config.Server.Port), certManager.GetCertificate, nil)
+			if err != nil {
+				panic("Error starting server with ACME TLS: " + err.Error())
+			}
+		}
+	} else {
+		http.HandleFunc("/", getIPAddress)
+		http.ListenAndServe(config.Server.Host+":"+fmt.Sprintf("%d", config.Server.Port), nil)
+	}
 }
 
 // https://husobee.github.io/golang/ip-address/2015/12/17/remote-ip-go.html
