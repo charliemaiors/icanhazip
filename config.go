@@ -26,6 +26,8 @@ type Acme struct {
 	Email            string   `mapstructure:"email",omitempty`
 	Domains          []string `mapstructure:"domains",omitempty`
 	AcmeDirectoryURL string   `mapstructure:"acme_directory_url",omitempty`
+	HTTP01Port       string   `mapstructure:"http01_port",omitempty`
+	TLSALPN01Port    string   `mapstructure:"tlsalpn01_port",omitempty`
 }
 
 type Result struct {

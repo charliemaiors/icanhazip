@@ -4,9 +4,11 @@ package main
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net"
@@ -28,6 +30,24 @@ const version = "1.0.0"
 
 var config Config
 var err error
+
+type icahanLegoUser struct {
+	Email        string
+	Registration *registration.Resource
+	Key          crypto.PrivateKey
+}
+
+func (u *icahanLegoUser) GetEmail() string {
+	return u.Email
+}
+
+func (u *icahanLegoUser) GetRegistration() *registration.Resource {
+	return u.Registration
+}
+
+func (u *icahanLegoUser) GetPrivateKey() crypto.PrivateKey {
+	return u.Key
+}
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")
@@ -64,25 +84,25 @@ func main() {
 				panic("Error generating private key: " + err.Error())
 			}
 
-			user := registration.RegisterOptions{
+			legoReg := icahanLegoUser{
 				Email: config.Server.TLS.Acme.Email,
 				Key:   certcrypto.PEMEncode(privateKey),
 			}
 
-			config := lego.NewConfig(&user)
-			config.CADirURL = config.Server.TLS.Acme.AcmeDirectoryURL
+			legoConfig := lego.NewConfig(&legoReg)
+			legoConfig.CADirURL = config.Server.TLS.Acme.AcmeDirectoryURL
 
-			client, err := lego.NewClient(config)
+			client, err := lego.NewClient(legoConfig)
 			if err != nil {
 				panic("Error creating ACME client: " + err.Error())
 			}
 
-			err = client.Challenge.SetHTTP01Provider(http01.NewProviderServer("", "80"))
+			err = client.Challenge.SetHTTP01Provider(http01.NewProviderServer("", config.Server.TLS.Acme.HTTP01Port))
 			if err != nil {
 				panic("Error setting HTTP-01 provider: " + err.Error())
 			}
 
-			err = client.Challenge.SetTLSALPN01Provider(tlsalpn01.NewProviderServer("", "443"))
+			err = client.Challenge.SetTLSALPN01Provider(tlsalpn01.NewProviderServer("", config.Server.TLS.Acme.TLSALPN01Port))
 			if err != nil {
 				panic("Error setting TLS-ALPN-01 provider: " + err.Error())
 			}
@@ -102,16 +122,25 @@ func main() {
 				panic("Error obtaining certificate: " + err.Error())
 			}
 
-			certManager := &tlsalpn01.CertManager{
-				Certificates: map[string]*tlsalpn01.Certificate{
-					config.Server.TLS.Acme.Domains[0]: {
-						Certificate: certificates.Certificate,
-						Key:         certificates.PrivateKey,
-					},
-				},
+			mux := http.NewServeMux()
+			mux.HandleFunc("/", getIPAddress)
+			cert, err := tls.X509KeyPair(certificates.Certificate, certificates.PrivateKey)
+
+			if err != nil {
+				panic("Error loading certificate: " + err.Error())
 			}
-			http.HandleFunc("/", getIPAddress)
-			err := http.ListenAndServeTLS(config.Server.Host+":"+fmt.Sprintf("%d", config.Server.Port), certManager.GetCertificate, nil)
+
+			tlsConfig := &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			}
+
+			httpServer := &http.Server{
+				Addr:      config.Server.Host + ":" + fmt.Sprintf("%d", config.Server.Port),
+				TLSConfig: tlsConfig,
+				Handler:   mux,
+			}
+
+			err = httpServer.ListenAndServeTLS("", "")
 			if err != nil {
 				panic("Error starting server with ACME TLS: " + err.Error())
 			}
@@ -121,8 +150,6 @@ func main() {
 		http.ListenAndServe(config.Server.Host+":"+fmt.Sprintf("%d", config.Server.Port), nil)
 	}
 }
-
-// https://husobee.github.io/golang/ip-address/2015/12/17/remote-ip-go.html
 
 // ipRange - a structure that holds the start and end of a range of ip addresses
 type ipRange struct {

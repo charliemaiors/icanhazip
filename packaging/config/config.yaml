@@ -1,6 +1,17 @@
 server:
   port: 8091
   host: 0.0.0.0
+  tls:
+    enabled: true
+    cert_file: /etc/icanhazip/cert.pem
+    key_file: /etc/icanhazip/key.pem
+    acme:
+      email: test@example.com
+      domains:
+        - example.com
+      acme_directory_url: https://acme-v02.api.letsencrypt.org/directory
+      http01_port: 80
+      tlsalpn01_port: 443
 results:
   include_private: true
   
