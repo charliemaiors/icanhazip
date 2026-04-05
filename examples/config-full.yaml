@@ -6,5 +6,10 @@ server:
     cert_file: /etc/icanhazip/cert.pem
     key_file: /etc/icanhazip/key.pem
     acme:
-      enabled: false
+      email: test@example.com
+      domains:
+        - example.com
+      acme_directory_url: https://acme-v02.api.letsencrypt.org/directory
+      http01_port: 80
+      tlsalpn01_port: 443
       

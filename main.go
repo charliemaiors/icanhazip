@@ -144,6 +144,8 @@ func main() {
 			if err != nil {
 				panic("Error starting server with ACME TLS: " + err.Error())
 			}
+		} else {
+			panic("Either cert and private key or acme must be defined, if both are defined the cert and private key has precedence")
 		}
 	} else {
 		http.HandleFunc("/", getIPAddress)
