@@ -57,6 +57,10 @@ release:
   mode: keep-existing
   footer: "Released with passion and GoReleaser"
 
+changelog:
+  sort: "asc"
+  use: github
+
 kos:
   - id: docker
     build: icanhazip
