@@ -82,7 +82,7 @@ func main() {
 		listener, err := net.Listen("tcp", server.Addr)
 
 		if err != nil {
-			panic(fmt.Sprint("Got error: %v, trying to listen on %s", err, server.Addr))
+			panic(fmt.Sprintf("Got error: %v, trying to listen on %s", err, server.Addr))
 		}
 		httpListener = &proxyproto.Listener{
 			Listener:          listener,
@@ -92,7 +92,7 @@ func main() {
 		httpListener, err = net.Listen("tcp", server.Addr)
 
 		if err != nil {
-			panic(fmt.Sprint("Got error: %v, trying to listen on %s", err, server.Addr))
+			panic(fmt.Sprintf("Got error: %v, trying to listen on %s", err, server.Addr))
 		}
 	}
 
