@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/go-acme/lego/v4 v4.33.0
+	github.com/pires/go-proxyproto v0.11.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/viper v1.21.0
 )
