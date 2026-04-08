@@ -7,4 +7,7 @@ server:
     key_file: /etc/icanhazip/key.pem
 results:
   include_private: true
+  http_headers:
+    - "X-Forwarded-For"
+    - "X-Real-IP"
   

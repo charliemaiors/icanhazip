@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
@@ -22,6 +23,7 @@ import (
 	"github.com/go-acme/lego/v4/challenge/tlsalpn01"
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/go-acme/lego/v4/registration"
+	proxyproto "github.com/pires/go-proxyproto"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -69,11 +71,41 @@ func main() {
 		}
 	}
 
+	server := &http.Server{
+		Addr: fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port),
+	}
+
+	var httpListener net.Listener
+
+	if config.Server.EnableProxyProtocol {
+		log.Infof("Proxy protocol enabled, listening for PROXY protocol on %s:%d\n", config.Server.Host, config.Server.Port)
+		listener, err := net.Listen("tcp", server.Addr)
+
+		if err != nil {
+			panic(fmt.Sprint("Got error: %v, trying to listen on %s", err, server.Addr))
+		}
+		httpListener = &proxyproto.Listener{
+			Listener:          listener,
+			ReadHeaderTimeout: 10 * time.Second,
+		}
+	} else {
+		httpListener, err = net.Listen("tcp", server.Addr)
+
+		if err != nil {
+			panic(fmt.Sprint("Got error: %v, trying to listen on %s", err, server.Addr))
+		}
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", getIPAddress)
+	server.Handler = mux
+
+	defer httpListener.Close()
+
 	if config.Server.TLS != nil {
 		if config.Server.TLS.CertFile != "" && config.Server.TLS.KeyFile != "" {
 			log.Infof("Starting server with TLS on %s:%d\n", config.Server.Host, config.Server.Port)
-			http.HandleFunc("/", getIPAddress)
-			err := http.ListenAndServeTLS(config.Server.Host+":"+fmt.Sprintf("%d", config.Server.Port), config.Server.TLS.CertFile, config.Server.TLS.KeyFile, nil)
+			err := server.ServeTLS(httpListener, config.Server.TLS.CertFile, config.Server.TLS.KeyFile)
 			if err != nil {
 				panic("Error starting server with TLS: " + err.Error())
 			}
@@ -122,8 +154,6 @@ func main() {
 				panic("Error obtaining certificate: " + err.Error())
 			}
 
-			mux := http.NewServeMux()
-			mux.HandleFunc("/", getIPAddress)
 			cert, err := tls.X509KeyPair(certificates.Certificate, certificates.PrivateKey)
 
 			if err != nil {
@@ -134,13 +164,9 @@ func main() {
 				Certificates: []tls.Certificate{cert},
 			}
 
-			httpServer := &http.Server{
-				Addr:      config.Server.Host + ":" + fmt.Sprintf("%d", config.Server.Port),
-				TLSConfig: tlsConfig,
-				Handler:   mux,
-			}
+			server.TLSConfig = tlsConfig
 
-			err = httpServer.ListenAndServeTLS("", "")
+			err = server.ServeTLS(httpListener, "", "")
 			if err != nil {
 				panic("Error starting server with ACME TLS: " + err.Error())
 			}
@@ -148,8 +174,7 @@ func main() {
 			panic("Either cert and private key or acme must be defined, if both are defined the cert and private key has precedence")
 		}
 	} else {
-		http.HandleFunc("/", getIPAddress)
-		http.ListenAndServe(config.Server.Host+":"+fmt.Sprintf("%d", config.Server.Port), nil)
+		server.Serve(httpListener)
 	}
 }
 
@@ -214,28 +239,30 @@ func getIPAddress(w http.ResponseWriter, r *http.Request) {
 	var ipv4 string
 	var ipv6 string
 
-	for _, h := range []string{"X-Forwarded-For", "X-Real-Ip"} {
-		addresses := strings.Split(r.Header.Get(h), ",")
-		for i := len(addresses) - 1; i >= 0; i-- {
-			ip, _, err := net.SplitHostPort(strings.TrimSpace(addresses[i]))
-			if err != nil {
-				ip = strings.TrimSpace(addresses[i]) // In case there's no port
-			}
-			realIP := net.ParseIP(ip)
-			if realIP == nil {
-				continue
-			}
-			if ipv4Address := realIP.To4(); ipv4Address != nil {
-				if !realIP.IsGlobalUnicast() || !config.Results.IncludePrivate && isPrivateSubnet(realIP) {
+	if config.Results.HTTPHeaders != nil {
+		for _, h := range config.Results.HTTPHeaders {
+			addresses := strings.Split(r.Header.Get(h), ",")
+			for i := len(addresses) - 1; i >= 0; i-- {
+				ip, _, err := net.SplitHostPort(strings.TrimSpace(addresses[i]))
+				if err != nil {
+					ip = strings.TrimSpace(addresses[i]) // In case there's no port
+				}
+				realIP := net.ParseIP(ip)
+				if realIP == nil {
 					continue
 				}
-				ipv4 = ip
-				break // Found a valid IPv4 address
+				if ipv4Address := realIP.To4(); ipv4Address != nil {
+					if !realIP.IsGlobalUnicast() || !config.Results.IncludePrivate && isPrivateSubnet(realIP) {
+						continue
+					}
+					ipv4 = ip
+					break // Found a valid IPv4 address
+				}
 			}
-		}
-		if ipv4 != "" {
-			fmt.Fprintf(w, ipv4+"\n")
-			return
+			if ipv4 != "" {
+				fmt.Fprintf(w, ipv4+"\n")
+				return
+			}
 		}
 	}
 

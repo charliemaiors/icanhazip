@@ -11,9 +11,10 @@ type Config struct {
 }
 
 type Server struct {
-	Port int    `mapstructure:"port",omitempty`
-	Host string `mapstructure:"host",omitempty`
-	TLS  *TLS   `mapstructure:"tls",omitempty`
+	Port                int    `mapstructure:"port",omitempty`
+	Host                string `mapstructure:"host",omitempty`
+	EnableProxyProtocol bool   `mapstructure:"enable_proxy_protocol",omitempty`
+	TLS                 *TLS   `mapstructure:"tls",omitempty`
 }
 
 type TLS struct {
@@ -31,7 +32,8 @@ type Acme struct {
 }
 
 type Result struct {
-	IncludePrivate bool `mapstructure:"include_private"`
+	IncludePrivate bool     `mapstructure:"include_private"`
+	HTTPHeaders    []string `mapstructure:"http_headers",omitempty`
 }
 
 func init() {
