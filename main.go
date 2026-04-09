@@ -119,7 +119,7 @@ func main() {
 
 			legoReg := icahanLegoUser{
 				Email: config.Server.TLS.Acme.Email,
-				Key:   certcrypto.PEMEncode(privateKey),
+				Key:   privateKey,
 			}
 
 			legoConfig := lego.NewConfig(&legoReg)
