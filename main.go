@@ -28,7 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const version = "1.0.0"
+const version = "1.2.1"
 
 var config Config
 var err error
@@ -89,6 +89,7 @@ func main() {
 			ReadHeaderTimeout: 10 * time.Second,
 		}
 	} else {
+		log.Infof("Proxy Protocol not enabled using standard listener")
 		httpListener, err = net.Listen("tcp", server.Addr)
 
 		if err != nil {
@@ -123,6 +124,7 @@ func main() {
 
 			legoConfig := lego.NewConfig(&legoReg)
 			legoConfig.CADirURL = config.Server.TLS.Acme.AcmeDirectoryURL
+			legoConfig.Certificate.KeyType = certcrypto.EC256
 
 			client, err := lego.NewClient(legoConfig)
 			if err != nil {
