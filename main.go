@@ -262,7 +262,7 @@ func getIPAddress(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			if ipv4 != "" {
-				fmt.Fprintf(w, ipv4+"\n")
+				fmt.Fprint(w, ipv4+"\n")
 				return
 			}
 		}
@@ -274,17 +274,17 @@ func getIPAddress(w http.ResponseWriter, r *http.Request) {
 		realIP := net.ParseIP(ip)
 		if realIP != nil && realIP.To4() != nil {
 			if realIP.IsGlobalUnicast() && (config.Results.IncludePrivate || !isPrivateSubnet(realIP)) {
-				fmt.Fprintf(w, ip+"\n")
+				fmt.Fprint(w, ip+"\n")
 				return
 			}
 		}
 	}
 
 	if ipv6 != "" { // Use IPv6 if no IPv4 was found
-		fmt.Fprintf(w, ipv6+"\n")
+		fmt.Fprint(w, ipv6+"\n")
 	} else {
 		ret := r.RemoteAddr
 		ip, _, _ := net.SplitHostPort(ret)
-		fmt.Fprintf(w, ip+"\n")
+		fmt.Fprint(w, ip+"\n")
 	}
 }

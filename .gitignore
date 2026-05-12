@@ -1,4 +1,12 @@
 icanhazip
+build/
+dist/
 .vscode/
 .DS_Store
-dist/
+*.log
+*.env
+*.key
+*.crt
+*.pem
+coverage.out
+test-results/
